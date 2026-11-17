@@ -82,7 +82,7 @@ pub fn parse_owned<const VERSION: usize>(
     let format_items = format_item::parse(ast);
     let items = format_items
         .map(|res| res.map(Into::into))
-        .collect::<Result<Box<_>, _>>()?;
+        .collect::<Result<Box<[_]>, _>>()?;
     Ok(items.into())
 }
 
