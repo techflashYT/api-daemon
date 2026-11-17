@@ -1272,15 +1272,6 @@ version = "0.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "5988cb1d626264ac94100be357308f29ff7cbdd3b36bda27f450a4ee3f713426"
 
-[[package]]
-name = "breakpad_sys"
-version = "0.1.0"
-source = "git+ssh://git@git.kaiostech.com/KaiOS/breakpad-sys.git?branch=update-bindgen#e387d3e6a91115bb101379dc6bf0931b28bfeee6"
-dependencies = [
- "bindgen",
- "cc",
- "log",
-]
 
 [[package]]
 name = "brotli"
@@ -1938,7 +1929,6 @@ dependencies = [
  "arti-config",
  "audiovolume_service",
  "bincode",
- "breakpad_sys",
  "common",
  "contacts_service",
  "contentmanager_service",
@@ -9221,7 +9211,7 @@ dependencies = [
 [[package]]
 name = "zip_utils"
 version = "0.1.0"
-source = "git+ssh://git@git.kaiostech.com/KaiOS/zip_utils.git?branch=master#8d3b23aed964d3231d55e52a7b3a0c605a089e16"
+source = "git+https://github.com/kaiostech/zip_utils.git?branch=main#8d3b23aed964d3231d55e52a7b3a0c605a089e16"
 dependencies = [
  "base64 0.13.1",
  "chrono",
