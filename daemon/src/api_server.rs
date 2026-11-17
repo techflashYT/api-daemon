@@ -208,7 +208,7 @@ fn is_app_origin(origin: &str) -> bool {
 // `navigator.b2g.externalapi.getToken()`: browsers set the `Origin` header themselves,
 // so page script cannot claim another app's origin.
 async fn token_handler(data: Data<SharedWsData>, req: HttpRequest) -> HttpResponse {
-    use rand::{distributions::Alphanumeric, Rng};
+    use std::io::Read;
 
     let origin = req
         .headers()
@@ -219,11 +219,15 @@ async fn token_handler(data: Data<SharedWsData>, req: HttpRequest) -> HttpRespon
         return HttpResponse::Forbidden().finish();
     }
 
-    let token: String = rand::thread_rng()
-        .sample_iter(&Alphanumeric)
-        .take(48)
-        .map(char::from)
-        .collect();
+    // 192 bits from the kernel's CSPRNG, hex encoded.
+    let mut raw = [0u8; 24];
+    if std::fs::File::open("/dev/urandom")
+        .and_then(|mut f| f.read_exact(&mut raw))
+        .is_err()
+    {
+        return HttpResponse::InternalServerError().finish();
+    }
+    let token: String = raw.iter().map(|b| format!("{:02x}", b)).collect();
     let permissions = APP_PERMISSIONS.iter().map(|p| p.to_string()).collect();
     let attributes = OriginAttributes::new(origin, permissions);
     if data
