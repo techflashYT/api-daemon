@@ -69,6 +69,7 @@ version = "0.26.0"
 features = [
     "pkg-config",
     "vcpkg",
+    "bundled",
     "unlock_notify",
 ]
 default-features = false
