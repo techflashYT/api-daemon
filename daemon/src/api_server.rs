@@ -11,7 +11,7 @@ use actix_web::web::{Bytes, Data};
 use actix_web::{guard, web, App, Error, HttpRequest, HttpResponse, HttpServer};
 use actix_web_actors::ws::{self, WebsocketContext};
 use common::traits::{
-    IdFactory, MessageEmitter, MessageKind, MessageSender, SendMessageError, Shared,
+    IdFactory, MessageEmitter, MessageKind, MessageSender, OriginAttributes, SendMessageError, Shared,
 };
 use log::{debug, error};
 use parking_lot::Mutex;
@@ -154,6 +154,87 @@ impl MessageEmitter for DummySender {
     fn send_raw_message(&self, _message: MessageKind) {}
     fn close_session(&self) -> Result<(), SendMessageError> {
         Ok(())
+    }
+}
+
+// Permissions granted to the web apps shipped with the OS (Nutria). Gecko-B2G computes
+// these per app from its manifest and registers tokens through the GeckoBridge service;
+// plain Linux browsers have no such privileged channel, so preinstalled apps get the
+// full set of service permissions through `/token` below.
+const APP_PERMISSIONS: &[&str] = &[
+    "contacts:read",
+    "contacts:write",
+    "dweb",
+    "feature-detection",
+    "power",
+    "process-manager",
+    "settings:read",
+    "settings:write",
+    "system-time:read",
+    "system-time:write",
+    "tcp-socket",
+    "themeable",
+    "volumemanager",
+    "webapps-manage",
+];
+
+// Is this an origin of a preinstalled web app: http://<name>.localhost[:port] ?
+fn is_app_origin(origin: &str) -> bool {
+    let host_port = match origin.strip_prefix("http://") {
+        Some(rest) => rest,
+        None => return false,
+    };
+    let host = host_port.split(':').next().unwrap_or("");
+    if let Some(port) = host_port.split(':').nth(1) {
+        if port.is_empty() || !port.chars().all(|c| c.is_ascii_digit()) {
+            return false;
+        }
+    }
+    if host_port.split(':').count() > 2 {
+        return false;
+    }
+    match host.strip_suffix(".localhost") {
+        Some(name) => {
+            !name.is_empty()
+                && name
+                    .chars()
+                    .all(|c| c.is_ascii_lowercase() || c.is_ascii_digit() || c == '-' || c == '.')
+        }
+        None => false,
+    }
+}
+
+// Hands a one-time session token to a preinstalled web app. This replaces gecko-b2g's
+// `navigator.b2g.externalapi.getToken()`: browsers set the `Origin` header themselves,
+// so page script cannot claim another app's origin.
+async fn token_handler(data: Data<SharedWsData>, req: HttpRequest) -> HttpResponse {
+    use rand::{distributions::Alphanumeric, Rng};
+
+    let origin = req
+        .headers()
+        .get("Origin")
+        .and_then(|v| v.to_str().ok())
+        .unwrap_or("");
+    if !is_app_origin(origin) {
+        return HttpResponse::Forbidden().finish();
+    }
+
+    let token: String = rand::thread_rng()
+        .sample_iter(&Alphanumeric)
+        .take(48)
+        .map(char::from)
+        .collect();
+    let permissions = APP_PERMISSIONS.iter().map(|p| p.to_string()).collect();
+    let attributes = OriginAttributes::new(origin, permissions);
+    if data
+        .global_context
+        .tokens_manager
+        .lock()
+        .register(&token, attributes)
+    {
+        HttpResponse::Ok().content_type("text/plain").body(token)
+    } else {
+        HttpResponse::InternalServerError().finish()
     }
 }
 
@@ -352,6 +433,7 @@ pub fn start(
                     .app_data(shared_data.clone())
                     .route("{tail}*", web::post().to(HttpResponse::MethodNotAllowed))
                     .route("/ws", web::get().to(ws_index))
+                    .route("/token", web::get().to(token_handler))
                     .route("/{tail}*", web::get().to(http_index)),
             )
     })
