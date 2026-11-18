@@ -5782,12 +5782,10 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "3053cf52e236a3ed746dfc745aa9cacf1b791d846bdaf412f60a8d7d6e17c8fc"
 dependencies = [
  "cc",
+ "cfg-if 1.0.0",
+ "getrandom 0.2.9",
  "libc",
- "once_cell",
- "spin 0.5.2",
  "untrusted",
- "web-sys",
- "winapi 0.3.9",
 ]
 
 [[package]]

@@ -26,4 +26,3 @@ lto = true
 
 [lib]
 name = "untrusted"
-path = "src/untrusted.rs"
