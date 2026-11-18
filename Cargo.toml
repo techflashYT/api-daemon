@@ -35,6 +35,13 @@ members = [
 ]
 
 [patch.crates-io]
+# ring 0.17.14 (generic C code for powerpc64le/riscv64) relabelled 0.16.20 so iroh/quinn/rustls
+# accept it, plus the dependents patched for its API changes. See third-party/ring.
+ring = {path = "third-party/ring"}
+untrusted = {path = "third-party/untrusted"}
+rcgen = {path = "third-party/rcgen"}
+rustls = {path = "third-party/rustls"}
+rustls-020 = {package = "rustls", path = "third-party/rustls-0.20.8"}
 # Use our fork with the extra feature for vhost
 zip = {path = "support/zip"}
 # Fork to downgrade cc
