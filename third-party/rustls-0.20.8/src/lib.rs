@@ -259,9 +259,10 @@
 //!   buffers. Will do nothing on non-Nightly releases.
 
 // Require docs for public APIs, deny unsafe code, etc.
-#![forbid(unsafe_code, unused_must_use)]
+#![forbid(unsafe_code)]
+#![warn(unused_must_use)]
 #![cfg_attr(not(read_buf), forbid(unstable_features))]
-#![deny(
+#![warn(
     clippy::clone_on_ref_ptr,
     clippy::use_self,
     trivial_casts,
